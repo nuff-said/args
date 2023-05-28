@@ -1,0 +1,35 @@
+{
+  "name": "@nuff-said/args",
+  "version": "1.0.0",
+  "description": "A concise argument parser for JavaScript",
+  "main": "index.js",
+  "files": [
+    "index.js"
+  ],
+  "scripts": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nuff-said/argsgit"
+  },
+  "keywords": [
+    "args",
+    "nuff",
+    "cli"
+  ],
+  "author": "Siddharth Shyniben <siddharth.muscat@gmail.com>",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/nuff-said/args/issues"
+  },
+  "homepage": "https://github.com/nuff-said/args#readme",
+  "devDependencies": {
+    "@size-limit/preset-small-lib": "^8.2.4",
+    "size-limit": "^8.2.4"
+  },
+  "size-limit": [
+    {
+      "path": "index.js",
+      "limit": "330B"
+    }
+  ]
+}
