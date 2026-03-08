@@ -1,60 +1,184 @@
-const nanoargs = require('./index');
-// *(?:-+([^= \d]+)[= ]?)?(?:([\'\"])([^\2]+?)\2|([^- \"\']+))?
+const parse = require('./index');
+const assert = require('node:assert/strict')
+const test = require('node:test');
 
-const assert = (text, cond) => {
-	if (!cond()) {
-		console.error('FAILED:', text)
-		process.exit(1)
-	}
-	console.log('PASS', text)
-}
+test('basic flags', () => {
+	const argv = parse(['moo', '--honk', 'cow']);
 
-assert('It parses --flag=val', () => {
-	const parsed = nanoargs('--bool=false --num=123 --str=yes'.split(' '))
-	return parsed.flags.bool === false && parsed.flags.num === 123 && parsed.flags.str === 'yes';
-})
+	assert.deepStrictEqual(argv, {
+		honk: 'cow',
+		_: ['moo'],
+	});
+});
 
-assert('It parses --flag val', () => {
-	const parsed = nanoargs('--bool false --num 123 --str yes'.split(' '))
-	return parsed.flags.bool === false && parsed.flags.num === 123 && parsed.flags.str === 'yes';
-})
+test('more flags', () => {
+	const argv = parse(['moo', '--honk', 'cow', '-p', '55', '--tacos=good']);
 
-assert('It parses -args', () => {
-	const parsed = nanoargs('-ar -z true -x=false -y2'.split(' '))
-	return parsed.flags.a && parsed.flags.r && parsed.flags.y === 2 && parsed.flags.x === false && parsed.flags.z === true;
-})
+	assert.deepStrictEqual(argv, {
+		honk: 'cow',
+		tacos: 'good',
+		p: '55',
+		_: ['moo'],
+	});
+});
 
-assert('It parses --args', () => {
-	const parsed = nanoargs('--args --here'.split(' '))
-	return parsed.flags.args && parsed.flags.here;
-})
+test('even more flags', () => {
+	const argv = parse(['--aaa', 'true', '--bbb', 'false', '--ccc=true', '--ddd=false']);
 
-assert('It parses --no-args', () => {
-	const parsed = nanoargs('--no-flag'.split(' '))
-	return parsed.flags.flag === false;
-})
+	assert.deepStrictEqual(argv, {
+		aaa: 'true',
+		bbb: 'false',
+		ccc: 'true',
+		ddd: 'false',
+		_: [],
+	});
+});
 
-assert('It parses positionals', () => {
-	const parsed = nanoargs('hey hey'.split(' '))
-	return parsed._.every(x => x === 'hey');
-})
+test('repeated values accumulate', () => {
+	const argv = parse(['-s', 'foo', '-s', 'bar']);
+	assert.deepStrictEqual(argv, {
+		s: ['foo', 'bar'],
+		_: [],
+	});
+});
 
-assert('It parses special chars', () => {
-	const parsed = nanoargs('--arg=hey="hmm" -f=/usr/local/bin'.split(' '))
-	return parsed.flags.arg === 'hey="hmm"' && parsed.flags.f === "/usr/local/bin"
-})
+test('string accumulates with bool', () => {
+	const argv = parse(['--mixed', '--mixed', 'str']);
+	assert.deepStrictEqual(argv, {
+		mixed: [true, 'str'],
+		_: [],
+	});
+});
 
-assert('It parses numbers', () => {
-	const parsed = nanoargs('--pi 3.14 -e=2e3 --life=42'.split(' '))
-	return parsed.flags.pi === 3.14 && parsed.flags.e === 2e3 && parsed.flags.life === 42;
-})
+test('bool accumulates with string', () => {
+	const argv = parse(['--mixed', 'str', '--mixed']);
+	assert.deepStrictEqual(argv, {
+		mixed: ['str', true],
+		_: [],
+	});
+});
 
-assert('It parses empty flags', () => {
-	const parsed = nanoargs('-x= lol'.split(' '))
-	return parsed.flags.x === '';
-})
+test('boolean groups', () => {
+	const argv = parse(['-x', '-z', 'one', 'two', 'three']);
 
-assert('It parses double dash', () => {
-	const parsed = nanoargs('-- --foo -x=n --'.split(' '))
-	return parsed.extras[0] === '--foo' && parsed.extras[1] === '-x=n';
-})
+	assert.deepStrictEqual(argv, {
+		x: true,
+		z: 'one',
+		_: ['two', 'three'],
+	});
+});
+
+test('short -k=v', () => {
+	const argv = parse(['-b=123']);
+	assert.deepStrictEqual(argv, { b: '123', _: [] });
+});
+
+test('multi short -k=v', () => {
+	const argv = parse(['-a=whatever', '-b=robots']);
+	assert.deepStrictEqual(argv, { a: 'whatever', b: 'robots', _: [] });
+});
+
+test('short with embedded equals -k=a=b', () => {
+	const argv = parse(['-k=a=b']);
+	assert.deepStrictEqual(argv, { k: 'a=b', _: [] });
+});
+
+test('short with later equals like -ab=c', () => {
+	const argv = parse(['-ab=c']);
+	assert.deepStrictEqual(argv, { a: true, b: 'c', _: [] });
+});
+
+test('long opts', () => {
+	// long boolean
+	assert.deepStrictEqual(
+		parse(['--bool']),
+		{ bool: true, _: [] }
+	);
+
+	// long capture sp
+	assert.deepStrictEqual(
+		parse(['--pow', 'xixxle']),
+		{ pow: 'xixxle', _: [] }
+	);
+
+	// long capture eq
+	assert.deepStrictEqual(
+		parse(['--pow=xixxle']),
+		{ pow: 'xixxle', _: [] }
+	);
+
+	// long captures sp
+	assert.deepStrictEqual(
+		parse(['--host', 'localhost', '--port', '555']),
+		{ host: 'localhost', port: '555', _: [] }
+	);
+
+	// long captures eq
+	assert.deepStrictEqual(
+		parse(['--host=localhost', '--port=555']),
+		{ host: 'localhost', port: '555', _: [] }
+	);
+});
+
+test('long with embedded equals --key=a=b', () => {
+	const argv = parse(['--key=a=b']);
+	assert.deepStrictEqual(argv, { key: 'a=b', _: [] });
+});
+
+test('comprehensive', () => {
+	const argv = parse([
+		'--name=meowmers', 'bare', '-cats', 'woo',
+		'-h', 'awesome', '--multi=quux',
+		'--key', 'value',
+		'-b', '--bool', '--no-meep', '--multi=baz',
+		'--', '--not-a-flag', 'eek',
+	]);
+	assert.deepStrictEqual(argv, {
+		c: true,
+		a: true,
+		t: true,
+		s: 'woo',
+		h: 'awesome',
+		b: true,
+		bool: true,
+		key: 'value',
+		multi: ['quux', 'baz'],
+		'no-meep': true,
+		name: 'meowmers',
+		_: ['bare', '--not-a-flag', 'eek'],
+	});
+});
+
+test('newlines in params', () => {
+	assert.deepStrictEqual(parse(['-s', 'X\nX']), { _: [], s: 'X\nX' });
+	assert.deepStrictEqual(parse(['--s=X\nX']), { _: [], s: 'X\nX' });
+});
+
+test('whitespace should be preserved in string values', () => {
+	const argv = parse(['-x', '  ', '-y', 'hello world']);
+
+	assert.strictEqual(argv.x, '  ');
+	assert.strictEqual(argv.y, 'hello world');
+});
+
+test('non-breaking spaces and special characters', () => {
+	const s = parse(['\u00A0', '\u00A0', '3'])._;
+	
+	assert.strictEqual(s.length, 3);
+	assert.strictEqual(typeof s[0], 'string');
+	assert.strictEqual(s[0], '\u00A0');
+	assert.strictEqual(s[1], '\u00A0');
+	assert.strictEqual(s[2], '3');
+});
+
+test('whitespace within equals sign', () => {
+	const argv = parse(['--foo=bar baz']);
+
+	assert.strictEqual(argv.foo, 'bar baz');
+});
+
+test('leading/trailing whitespace in keys', () => {
+	const argv = parse(['-- foo ', 'bar']);
+	
+	assert.strictEqual(argv[' foo '], 'bar');
+});

@@ -1,8 +1,10 @@
 # [@nuff-said/args][repo-npm]
 
 A compact and efficient CLI argument parser that supports all major argument
-formats, all packed into a minzipped code size of just **325 bytes!** 4x smaller
-than the most popular option, minimist.
+formats, all packed into a minzipped code size of just **283 bytes!** 4.6x smaller
+than the most popular option, minimist, albeit missing a few features.
+
+Type checking and parsing are non-goals, as a schema parser is a dedicated tool that should be used to this end.
 
 ```javascript
 const parseArgs = require('@nuff-said/args');
@@ -10,11 +12,16 @@ console.log(parseArgs(process.argv.slice(2)));
 ```
 
 ```shell
-$ node index bool=false --num 123 -ar -z false --no-test hey hey -e2e3 -x= -- --no -more -parse=ing
+$ node index --bool=false --num 123 -ar -z false --test hey hey -x= -- --no -more -parse=ing   
 {
-  flags: { test: false, num: 123, x: '', z: false, a: true, r: true, e: 2000 },
-  _: [ 'bool=false', 'hey', 'hey' ],
-  extras: [ '--no', '-more', '-parse=ing' ]
+  _: [ 'hey', '--no', '-more', '-parse=ing' ],
+  bool: 'false',
+  num: '123',
+  a: true,
+  r: true,
+  z: 'false',
+  test: 'hey',
+  x: ''
 }
 ```
 

@@ -29,7 +29,7 @@
   "size-limit": [
     {
       "path": "index.js",
-      "limit": "330B"
+      "limit": "285B"
     }
   ]
 }
