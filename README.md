@@ -1,7 +1,7 @@
 # [@nuff-said/args][repo-npm]
 
 A compact and efficient CLI argument parser that supports all major argument
-formats, all packed into a _raw code size_ of just **379 bytes!** 3.4x smaller
+formats, all packed into a _raw code size_ of just **378 bytes!** 3.4x smaller
 than the _minzipped size_ of the most popular option, minimist, albeit missing a few features.
 
 Type checking and parsing are non-goals, as a schema parser is a dedicated tool that should be used to this end.

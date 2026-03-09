@@ -11,6 +11,7 @@
     "type": "git",
     "url": "git+https://github.com/nuff-said/args.git"
   },
+  "type": "module",
   "keywords": [
     "args",
     "nuff",
